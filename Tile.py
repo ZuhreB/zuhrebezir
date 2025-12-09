@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext
 from typing import Dict, List
 
+#Dict for Requirement 2 that lists which other points each point can go to
 gidilebilecek_yerler: Dict[int, List[int]] = {
     1: [2, 4, 5],
     2: [1, 3, 4, 5, 6],
@@ -18,7 +19,7 @@ gidilebilecek_yerler: Dict[int, List[int]] = {
 class Tile:
     def __init__(self, renk, goal_state, current_state, adim_sayisi=0):
         self.state = current_state
-        self.adim_sayisi = adim_sayisi
+        self.adim_sayisi = adim_sayisi #Requirement 3 The value to be calculated as g()
         self.is_goal_state = 1
         self.fn = 0
         self.renk = renk
@@ -27,14 +28,18 @@ class Tile:
     def __str__(self):
         return (f"{self.renk} -> Hedef: {self.goal_state}, Konum: {self.state}, Step: {self.adim_sayisi}")
 
+    # Requirement 3 hamming distance
     def h_function(self):
         if self.goal_state == self.state:
             self.is_goal_state = 0
         return self.is_goal_state
 
+    #Requirement 3 f(n)=adim_sayisi+hamming
     def f_function(self, tile1, tile2):
         return tile1.h_function() + tile2.h_function() + self.h_function() + self.adim_sayisi
 
+    # Requirement 2 checks whether the numbers from the dict
+    # I created overlap with the positions of other stones and returns a list containing all the places to go
     def expand(self, tile1, tile2):
         local_expanded_list = []
         possible_moves = gidilebilecek_yerler.get(self.state, [])
@@ -67,6 +72,7 @@ class ProjectGUI:
         input_frame = tk.LabelFrame(self.root, text="Başlangıç ve Hedef Konumları (1-9)", padx=10, pady=10)
         input_frame.pack(fill="x", padx=10, pady=5)
 
+        # Requirement 1 kullanıcının girdiyi yazabilmesi için entry yaratıyorum
         # Kırmızı
         tk.Label(input_frame, text="Kırmızı (R) Başlangıç:", fg="red").grid(row=0, column=0)
         self.entry_r_start = tk.Entry(input_frame, width=5)
@@ -117,7 +123,7 @@ class ProjectGUI:
             cell.create_text(15, 15, text=str(i), fill="gray")
             self.cells[i] = cell
 
-        log_frame = tk.LabelFrame(self.root, text="Alternatif yollar ve Gidiş yolu", padx=10, pady=10)
+        log_frame = tk.LabelFrame(self.root, text="Alternatif yollar ve Akış", padx=10, pady=10)
         log_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
         self.log_text = scrolledtext.ScrolledText(log_frame, height=15)
@@ -142,13 +148,14 @@ class ProjectGUI:
 
     def draw_tile(self, pos, color, text):
         canvas = self.cells[pos]
-        # Daire çiziyorum
+        # I draw circles, these represent stones
         canvas.create_oval(10, 10, 70, 70, fill=color, outline="black", tags="tile")
-        # Harf yazıyorum
+        # I write letters, if the letters of the stones are red = k
         canvas.create_text(40, 40, text=text, fill="white", font=("Arial", 20, "bold"), tags="tile")
 
     def initialize_game(self):
         try:
+            # Requirement 1 This is the part where I receive the inputs from the entries I created in setup_ui()
             r_start = int(self.entry_r_start.get())
             r_goal = int(self.entry_r_goal.get())
             g_start = int(self.entry_g_start.get())
@@ -166,8 +173,7 @@ class ProjectGUI:
 
             self.priority_queue = []
             self.toplam_adim = 0
-            self.sira = 0  # Sıra Kırmızıda
-
+            self.sira = 0  # The order is Red, this helps me determine the order for Requirement 4
             self.log_text.delete(1.0, tk.END)
             self.log("SİMÜLASYON BAŞLIYOR...")
             self.log(f"Başlangıç: R->{r_start}, G->{g_start}, B->{b_start}")
@@ -180,8 +186,14 @@ class ProjectGUI:
             messagebox.showerror("Hata", "Lütfen tüm alanlara 1-9 arası sayı giriniz.")
 
     def next_step(self):
+
+        # Check that no more than 10 steps have been taken for Requirement 5
         if self.tile_r.adim_sayisi >= 10 and self.tile_b.adim_sayisi >= 10 and self.tile_g.adim_sayisi >= 10:
             self.log("\n ! Maksimum adım sayısına ulaşıldı (10). Çözüm bulunamadı.")
+            self.log("\n Priority Queue (Fringe) ")
+            for item in self.priority_queue:
+                self.log(str(item))
+
             self.btn_step.config(state="disabled")
             return
 
@@ -189,6 +201,11 @@ class ProjectGUI:
                 self.tile_b.goal_state == self.tile_b.state and
                 self.tile_g.goal_state == self.tile_g.state):
             self.log("\nHer taş hedefe ulaştı. Tebrikler !!!!")
+
+            self.log("\n Priority Queue (Fringe) ")
+            for item in self.priority_queue:
+                self.log(str(item))
+
             messagebox.showinfo("Başarılı", "Tüm taşlar hedefe ulaştı!")
             self.btn_step.config(state="disabled")
             return
@@ -199,11 +216,7 @@ class ProjectGUI:
 
             list2 = self.tile_r.expand(self.tile_g, self.tile_b)
 
-            if not list2:
-                self.log(" ! Gidecek yer yok (Sıkıştı).")
-                self.btn_step.config(state="disabled")
-                return
-
+            #Requirement 6 showing the selected and other alternative stones with their costs
             self.log(" Alternatifler:")
             for tile in list2:
                 tile.fn = tile.f_function(self.tile_g, self.tile_b)
@@ -214,25 +227,19 @@ class ProjectGUI:
 
             self.priority_queue.append(en_kucuk_tile)
             self.tile_r.state = en_kucuk_tile.state
-            self.tile_r.adim_sayisi = en_kucuk_tile.adim_sayisi
 
             self.toplam_adim += 1
             self.tile_r.adim_sayisi = self.toplam_adim
             self.tile_g.adim_sayisi = self.toplam_adim
             self.tile_b.adim_sayisi = self.toplam_adim
 
-            self.sira = 1  # Sıra Yeşile geçiyo
+            self.sira = 1  # time to go green
 
         elif self.sira == 1:
             self.log(
                 f"\n[{self.tile_g.renk} Taş Hamlesi - Şu anki: {self.tile_g.state}, Hedef: {self.tile_g.goal_state}, Step: {self.tile_g.adim_sayisi}]")
 
             list3 = self.tile_g.expand(self.tile_r, self.tile_b)
-
-            if not list3:
-                self.log(" ! Gidecek yer yok (Sıkıştı).")
-                self.btn_step.config(state="disabled")
-                return
 
             self.log(" Alternatifler:")
             for tile in list3:
@@ -244,25 +251,19 @@ class ProjectGUI:
 
             self.priority_queue.append(en_kucuk_tile)
             self.tile_g.state = en_kucuk_tile.state
-            self.tile_g.adim_sayisi = en_kucuk_tile.adim_sayisi
 
             self.toplam_adim += 1
             self.tile_r.adim_sayisi = self.toplam_adim
             self.tile_g.adim_sayisi = self.toplam_adim
             self.tile_b.adim_sayisi = self.toplam_adim
 
-            self.sira = 2  # Sıra Maviye geçiyo
+            self.sira = 2  # time to go blue
 
         elif self.sira == 2:
             self.log(
                 f"\n[{self.tile_b.renk} Taş Hamlesi - Şu anki: {self.tile_b.state}, Hedef: {self.tile_b.goal_state}, Step: {self.tile_b.adim_sayisi}]")
 
             list4 = self.tile_b.expand(self.tile_r, self.tile_g)
-
-            if not list4:
-                self.log(" ! Gidecek yer yok (Sıkıştı).")
-                self.btn_step.config(state="disabled")
-                return
 
             self.log(" Alternatifler:")
             for tile in list4:
@@ -274,16 +275,15 @@ class ProjectGUI:
 
             self.priority_queue.append(en_kucuk_tile)
             self.tile_b.state = en_kucuk_tile.state
-            self.tile_b.adim_sayisi = en_kucuk_tile.adim_sayisi
 
             self.toplam_adim += 1
             self.tile_r.adim_sayisi = self.toplam_adim
             self.tile_g.adim_sayisi = self.toplam_adim
             self.tile_b.adim_sayisi = self.toplam_adim
 
-            self.sira = 0  # Sıra tekrar Kırmızıya geçiyor
+            self.sira = 0  # again time to go red stone
 
-        # Tahtayı güncelliyorum
+        # updating the board
         self.draw_board()
 
 
