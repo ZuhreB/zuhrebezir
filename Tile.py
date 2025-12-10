@@ -32,7 +32,8 @@ class Tile:
     def h_function(self):
         if self.goal_state == self.state:
             self.is_goal_state = 0
-        return self.is_goal_state
+            return 0
+        return 1
 
     #Requirement 3 f(n)=adim_sayisi+hamming
     def f_function(self, tile1, tile2):
@@ -212,7 +213,7 @@ class ProjectGUI:
 
         if self.sira == 0:
             self.log(
-                f"\n[{self.tile_r.renk} Taş Hamlesi - Şu anki: {self.tile_r.state}, Hedef: {self.tile_r.goal_state}, Step: {self.tile_r.adim_sayisi}]")
+                f"\n[{self.tile_r.renk} Taş Hamlesi - Şu anki: {self.tile_r.state}, Hedef: {self.tile_r.goal_state}, Step: {self.toplam_adim+1}]")
 
             list2 = self.tile_r.expand(self.tile_g, self.tile_b)
 
@@ -237,7 +238,7 @@ class ProjectGUI:
 
         elif self.sira == 1:
             self.log(
-                f"\n[{self.tile_g.renk} Taş Hamlesi - Şu anki: {self.tile_g.state}, Hedef: {self.tile_g.goal_state}, Step: {self.tile_g.adim_sayisi}]")
+                f"\n[{self.tile_g.renk} Taş Hamlesi - Şu anki: {self.tile_g.state}, Hedef: {self.tile_g.goal_state}, Step: {self.toplam_adim+1}]")
 
             list3 = self.tile_g.expand(self.tile_r, self.tile_b)
 
@@ -261,7 +262,7 @@ class ProjectGUI:
 
         elif self.sira == 2:
             self.log(
-                f"\n[{self.tile_b.renk} Taş Hamlesi - Şu anki: {self.tile_b.state}, Hedef: {self.tile_b.goal_state}, Step: {self.tile_b.adim_sayisi}]")
+                f"\n[{self.tile_b.renk} Taş Hamlesi - Şu anki: {self.tile_b.state}, Hedef: {self.tile_b.goal_state}, Step: {self.toplam_adim+1}]")
 
             list4 = self.tile_b.expand(self.tile_r, self.tile_g)
 
